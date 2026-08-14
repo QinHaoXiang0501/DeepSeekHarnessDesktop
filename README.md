@@ -1,10 +1,36 @@
 # DeepSeek Harness 桌面版
 
-> 用 Electron 把 [DeepSeek Harness](https://github.com/deepseek-ai) 的网页版封装成 Windows 桌面应用：**双击即用，无需命令行**，100% 复用原版功能（agent / 工具 / 模型 / 会话 / 插件），安装版支持自动更新。
+> 用 Electron 把 [DeepSeek Harness](https://github.com/deepseek-ai) 的网页版封装成 Windows 桌面应用。安装包已经内置 Node.js 和运行依赖，普通用户双击即可使用，不需要安装 Node.js、npm、Git，也不需要运行命令行。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
+
+## 普通用户先看
+
+### 使用前需要准备什么
+
+- Windows 10/11 64 位电脑
+- C 盘至少预留 3 GB 可用空间
+- **不需要安装 Node.js、npm 或 Git**
+- **不需要执行本文中的任何 PowerShell 命令**
+
+本文后半部分的 Node.js、npm 和命令行内容只面向开发者。普通用户只需要下载安装包。
+
+### 下载与安装
+
+1. 打开 [Releases 下载页面](https://github.com/QinHaoXiang0501/DeepSeekHarnessDesktop/releases/latest)。
+2. 下载名称中包含 `Setup` 的安装版，例如 `DeepSeek-Harness-Setup-0.1.1.exe`。
+3. 下载完成后双击安装包，按照安装向导操作。
+4. 安装完成后，从桌面快捷方式启动 DeepSeek Harness。
+
+> 请不要下载 `.blockmap`、`latest.yml` 或 Source code，它们不是安装程序。
+
+### 安装时请耐心等待
+
+安装包约 157 MB，安装时会释放约 600 MB、2 万多个运行文件。Windows 安全软件可能逐个扫描文件，因此安装进度条可能在中间停留 **3～8 分钟**。只要安装窗口没有报错，就不要反复点击或强制关闭。
+
+安装包目前没有数字签名。Windows 如果显示“未知发布者”或 SmartScreen 提示，请先确认文件来自本仓库，再选择“更多信息” → “仍要运行”。
 
 ## 这是什么
 
@@ -36,12 +62,12 @@ Electron 主进程
 
 | 文件 | 类型 | 说明 |
 |---|---|---|
-| `DeepSeek Harness Setup 0.1.x.exe` | NSIS 安装包 | **推荐**。有安装向导、开始菜单/桌面快捷方式、卸载入口，**支持自动更新** |
-| `DeepSeek Harness 0.1.x.exe` | 便携版 | 免安装，双击即用，可放 U 盘；**不支持自动更新**，且更易被杀软误报 |
+| `DeepSeek-Harness-Setup-0.1.x.exe` | NSIS 安装包 | **推荐**。有安装向导、开始菜单/桌面快捷方式、卸载入口，**支持自动更新** |
+| `DeepSeek-Harness-0.1.x.exe` | 便携版 | 免安装，但首次启动需要临时解压，可能长时间看不到窗口；**不支持自动更新** |
 
 > 版本号会随发布递增，请以下载页最新版本为准。
 
-安装/解压后双击 `DeepSeek Harness.exe` 即可。
+普通用户建议始终下载带 `Setup` 的安装版。便携版主要用于临时测试，不适合作为首次体验版本。
 
 ### 数据保存在哪里
 
@@ -52,7 +78,7 @@ Electron 主进程
 
 因此**升级或重装程序不会丢失聊天记录**。想迁移/备份数据，把 `~/.dsh` 复制走即可；想换目录，设置 `DSH_HOME` 环境变量后重启（详见下方[环境变量](#环境变量)）。
 
-## 开发环境
+## 开发者环境（普通用户无需阅读）
 
 ```powershell
 # 1) 安装依赖（只需一次；GitHub 直连不通时走 .npmrc 里的 npmmirror 镜像）
@@ -64,7 +90,7 @@ npm run dev
 
 开发模式用**系统 Node** 启动 `dsh web`（与 node_modules 原生依赖 ABI 匹配），Electron 窗口加载本地页面。
 
-### 环境要求
+### 开发者环境要求
 
 - Windows 10/11 x64
 - Node.js ≥ 22（CI 使用 v24）
@@ -158,6 +184,9 @@ DeepseekHarness/
 
 | 现象 | 最可能原因 | 处理 |
 |---|---|---|
+| 安装进度条长时间停在中间 | 正在释放大量小文件，Windows 安全软件同时扫描 | 一般等待 3～8 分钟即可；安装窗口没有报错时不要强制关闭 |
+| 提示“无法写入……Temp……app-64.7z” | C 盘空间不足、临时目录异常，或安全软件阻止写入 | 确保 C 盘至少有 3 GB 空间，关闭安装程序后重新下载并再试；仍失败时重启电脑，并暂时关闭安全软件的实时防护 |
+| 双击桌面图标后暂时没有窗口 | 首次启动服务和安全扫描需要时间 | 先等待 1～3 分钟，不要连续双击；仍无窗口时重启电脑后再试 |
 | 窗口提示「等待本地服务超时」 | 端口被占用 / dsh 启动失败 | 换端口 `$env:DSH_WEB_PORT=3090; npm run dev`；或先关闭占用进程 |
 | 「无法启动本地服务」 | Node 版本过低 / 依赖未装全 | 确认 Node ≥ 22，重新 `npm install` |
 | 首次 `npm install` 卡在 electron 下载 | GitHub 直连被墙 | 确认存在 `.npmrc`（npmmirror 镜像），删除 `node_modules/electron` 后重装 |
