@@ -49,6 +49,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run release
 
+      - name: Fix duplicate drafts & publish
+        if: steps.check.outputs.update == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: powershell -ExecutionPolicy Bypass -File scripts/publish-drafts.ps1
+
       - name: Commit version bump
         if: steps.check.outputs.update == 'true'
         shell: pwsh
