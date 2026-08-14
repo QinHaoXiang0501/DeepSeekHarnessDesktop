@@ -1,0 +1,57 @@
+{
+  "name": "deepseek-harness-desktop",
+  "productName": "DeepSeek Harness",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 桌面版 —— 用 Electron 封装 dsh web 本地服务",
+  "main": "electron/main.js",
+  "private": true,
+  "author": "DeepSeek Harness Desktop",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "electron:dev": "electron .",
+    "prepare:node": "powershell -ExecutionPolicy Bypass -File scripts/prepare-node.ps1",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder --win",
+    "electron:build": "electron-builder --win",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "ai.deepseek.harness.desktop",
+    "productName": "DeepSeek Harness",
+    "asar": false,
+    "npmRebuild": false,
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "node-runtime",
+        "to": "node"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

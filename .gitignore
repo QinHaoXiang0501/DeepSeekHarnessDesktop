@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.npm-cache/
+.electron-cache/
+.electron-builder-cache/
+.test-home/
+node-runtime/
+_node.zip
+_probe*.js
+_probe*.mjs
+_probe*.txt
+_http_probe*
+_dl_node.mjs
+_dsh*.log
+_out*.log
+_err*.log
+_t.txt
