@@ -84,8 +84,8 @@ function startServer() {
   serverProcess = spawn(binary, args, {
     env: process.env,
     cwd: WORKSPACE,
-    stdio: 'inherit', // 把 dsh 的日志直接透传到终端，便于排查
-    windowsHide: false,
+    stdio: 'ignore',
+    windowsHide: true,
   });
 
   serverProcess.on('error', (err) => {
