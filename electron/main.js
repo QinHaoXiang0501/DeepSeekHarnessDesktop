@@ -22,6 +22,7 @@
  */
 
 const { app, BrowserWindow, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const { spawn, spawnSync } = require('node:child_process');
 const http = require('node:http');
 const os = require('node:os');
@@ -33,6 +34,14 @@ const PORT = Number(process.env.DSH_WEB_PORT || 3080);
 const URL = `http://${HOST}:${PORT}`;
 // 本地服务的“工作目录”（agent 默认的 workspace 根目录）。
 const WORKSPACE = process.env.DSH_WORKSPACE || os.homedir();
+
+// 应用版本号（来自 package.json；标题与加载页展示用）。
+let APP_VERSION = '0.0.0';
+try {
+  APP_VERSION = require('../package.json').version;
+} catch (_) {
+  /* 忽略 */
+}
 
 let mainWindow = null;
 let serverProcess = null;
@@ -125,7 +134,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: APP_TITLE,
+    title: `${APP_TITLE} v${APP_VERSION}`,
     autoHideMenuBar: true,
     backgroundColor: '#111827',
     webPreferences: {
@@ -140,11 +149,15 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // 先显示一个轻量加载页，等服务就绪后再加载真正的界面。
+  // 先显示一个轻量加载页（含版本号），等服务就绪后再加载真正的界面。
   mainWindow.loadURL(
     'data:text/html;charset=utf-8,' +
       encodeURIComponent(
-        '<body style="font-family:system-ui;background:#111827;color:#e5e7eb;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>正在启动 DeepSeek Harness…</p></body>'
+        '<body style="font-family:system-ui;background:#111827;color:#e5e7eb;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">' +
+          '<div style="text-align:center">' +
+          '<p style="font-size:18px;margin:0 0 8px">正在启动 DeepSeek Harness…</p>' +
+          `<p style="font-size:12px;color:#9ca3af;margin:0">v${APP_VERSION}</p>` +
+          '</div></body>'
       )
   );
 
@@ -163,6 +176,43 @@ async function boot() {
   }
   if (!mainWindow || mainWindow.isDestroyed()) return;
   await mainWindow.loadURL(URL);
+}
+
+/**
+ * 自动更新（electron-updater，走 GitHub Releases）。
+ * 仅打包版生效；检查失败（断网/被墙等）时静默，不打扰用户。
+ */
+function setupAutoUpdater() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-downloaded', (info) => {
+    dialog
+      .showMessageBox(mainWindow, {
+        type: 'info',
+        title: APP_TITLE,
+        message: `发现新版本 v${info.version}`,
+        detail: '新版本已下载完成，重启后生效。',
+        buttons: ['立即重启', '稍后'],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      })
+      .catch(() => {});
+  });
+
+  autoUpdater.on('error', () => {
+    /* 静默处理：GitHub 不可达等原因不打断启动 */
+  });
+
+  // 延迟检查，避免拖慢启动
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 5000);
 }
 
 /** 退出前终止本地服务（Windows 用 taskkill 结束整棵进程树）。 */
@@ -194,8 +244,10 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
+    app.setAppUserModelId('ai.deepseek.harness.desktop');
     createWindow();
     boot();
+    setupAutoUpdater();
   });
 
   app.on('activate', () => {

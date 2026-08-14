@@ -1,0 +1,60 @@
+name: Auto Release
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 每天 UTC 00:00 检查一次 dsh 是否有新版本
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '强制构建并发布（忽略版本检测，用于首次发布）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check dsh update
+        id: check
+        shell: pwsh
+        env:
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
+        run: node scripts/check-release.mjs
+
+      - name: Install dependencies
+        if: steps.check.outputs.update == 'true'
+        shell: pwsh
+        run: npm install
+
+      - name: Prepare Node runtime
+        if: steps.check.outputs.update == 'true'
+        shell: pwsh
+        run: npm run prepare:node
+
+      - name: Build & publish to GitHub Releases
+        if: steps.check.outputs.update == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release
+
+      - name: Commit version bump
+        if: steps.check.outputs.update == 'true'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: bump to dsh ${{ steps.check.outputs.dsh_version }}" || Write-Output "no changes to commit"
+          git push
